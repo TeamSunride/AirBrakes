@@ -1,24 +1,28 @@
 # AirBrakes
+
+## Main Idea
+1. Create a trajectory with boundary condition apogee
+2. Discretize the input control trajectory and save as CSV
+3. Logic based controller to select the appropriate Deployment levels
+
 ## Simulation 
-Rocket model (ODE) for the simulator is ready, can be found in the MATLAB folder
+ - RocketPy simulation: Needs to be worked on. 
+ - OpenRocket simulation: Already done, not yet on git 
 
-1. The coefficient of damping still needs work but the rest are reasonably accurate. 
-2. Needs more testing 
+## Control System
+ - Trajectory optimisation: folder has the code for the input control trajectory 
+ - Control system design: for the on-board controller needs to be completed
+ 
+## Firmware
+ - Controller firmware development will start once the controller has been designed
 
-The control algorithm needs to be added.
-
-SO : Idea #1 : 
-1. Create a trajectory with boundary condition apogee 800m
-2. trajectory is based on vertical speed and height 
-3. LQR to follow this trajectory
-
-
+## CFD 
+ - Analysis team has done stability analysis and will be shortly providing us with the data. 
 
 
-RocketPy:
-    1. No support for airbrakes as of now
-    2. So probably need to edit source for this (difficult)
-    3. Need to find a trajectory optimisation tool box for this in python
+
+
+
 
 
 
