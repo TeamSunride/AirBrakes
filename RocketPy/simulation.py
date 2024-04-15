@@ -1,5 +1,10 @@
 
-"""Copied from the RocketPy tutorial --- testing how this works"""
+"""
+CG position needs to be validated
+CD values need to be calculated (currently using values found online)
+Solid motor propellent information needs to be added
+
+"""
 
 
 from rocketpy import Environment, Flight, Rocket, SolidMotor, GenericMotor
@@ -48,19 +53,20 @@ Pro75M1670 = SolidMotor(
 AeroTechK550W = GenericMotor(
    thrust_source="AeroTech_K550W.eng",
    chamber_radius=54/(2*1000),          # from thrustcurve.org
-   chamber_height=41/1000,              # from thrustcurve.org
-   chamber_position= (1.33 - 0.815 - 41/(2*1000)), # Total length - CG pos - midpoint of chamber
+   chamber_height=438/1000,              # from thrustcurve.org
+   chamber_position= +438/(2*1000),     # midpoint of chamber from origin (nozzle)
    dry_mass=1.487,                      # from thrustcurve.org
    propellant_initial_mass=0.889,       # from thrustcurve.org
    dry_inertia=(0.125, 0.125, 0.002), #copied from pro75M example need to find
    nozzle_radius= 54/(2*1000),          # dia = 54 mm
    burn_time=3.9,
-   #nozzle_position=0,
+   nozzle_position=0,
+   coordinate_system_orientation="nozzle_to_combustion_chamber"
 ) 
 
 x4 = Rocket(
     radius=9.8 / (2* 100),                      # dia = 9.8cm
-    mass=5.083,                                 # OpenRocket estimate
+    mass=3.597,                                 # OpenRocket estimate
     inertia=(6.321, 6.321, 0.034),              # copied from Rocketpy example
     power_off_drag="powerOffDragCurve.csv",     # drag needs change
     power_on_drag="powerOnDragCurve.csv",
@@ -68,11 +74,11 @@ x4 = Rocket(
     coordinate_system_orientation="tail_to_nose",
 )
 
-x4.add_motor(AeroTechK550W, position=-(1.33 - 0.815)) # position needs to be checked again [Total length - CG pos]
+x4.add_motor(AeroTechK550W, position=-(1.33 - 0.686 - 41/(2*1000))) # position needs to be checked again [Total length - CG pos]
 
 rail_buttons = x4.set_rail_buttons(
     upper_button_position=0.0818,
-    lower_button_position=-0.6182,
+    lower_button_position=-0.2,
     angular_position=45,
 )
 
@@ -83,7 +89,7 @@ fin_set = x4.add_trapezoidal_fins(
     root_chord= 15/100,         # from OR 15 cm
     tip_chord= (15 -6) / 100,
     span=15/100,
-    position=-(1.33-0.815 - 15/(2*100)), # Total length - CG pos - midpoint of fin
+    position=-(1.33-0.687 - 15/(2*100)), # Total length - CG pos - midpoint of fin
     cant_angle=0,
     sweep_angle=21.8,           # OR fins only have forward sweep edit this
     airfoil=None,
@@ -112,5 +118,12 @@ drogue = x4.add_parachute(
     noise=(0, 8.3, 0.5),
 )
 
-x4.plots.static_margin()
-x4.draw()
+#x4.plots.static_margin()
+#x4.draw()
+
+test_flight = Flight(
+    rocket=x4, environment=env, rail_length=5.2, inclination=85, heading=0
+    )
+
+test_flight.info()
+test_flight.plots.trajectory_3d()
