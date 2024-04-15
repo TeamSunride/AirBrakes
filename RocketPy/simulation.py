@@ -2,7 +2,7 @@
 """Copied from the RocketPy tutorial --- testing how this works"""
 
 
-from rocketpy import Environment, Flight, Rocket, SolidMotor
+from rocketpy import Environment, Flight, Rocket, SolidMotor, GenericMotor
 import datetime
 
 
@@ -19,88 +19,98 @@ def DragWithAirBrakes(obj=None, controlInput=None):
 
 
 #change to MRC later
-env = Environment(railLength=5.2, latitude=32.990254, longitude=-106.974998, elevation=1400)
+env = Environment(latitude=32.990254, longitude=-106.974998, elevation=1400)
 
 tomorrow = datetime.date.today() + datetime.timedelta(days=1)
-env.setDate((tomorrow.year,tomorrow.month,tomorrow.day,12))
-env.setAtmosphericModel(type="Forecast", file="GFS")
+env.set_date((tomorrow.year,tomorrow.month,tomorrow.day,12))
+env.set_atmospheric_model(type="Forecast", file="GFS")
+'''
 
-J460 = SolidMotor(
-    thrustSource="AeroTech_J460T.eng",
-    burnOut=1.8,
-    grainNumber=3,
-    grainSeparation=3 / 1000,
-    grainDensity=1815,
-    grainOuterRadius=22 / 1000,
-    grainInitialInnerRadius=15 / 1000,
-    grainInitialHeight= 230 / 1000,
-    nozzleRadius=54 / 1000,
-    throatRadius=0.0079502,
-    interpolationMethod="linear",
+Pro75M1670 = SolidMotor(
+    thrust_source="Cesaroni_M1670.eng",
+    dry_mass=1.815,
+    dry_inertia=(0.125, 0.125, 0.002),
+    nozzle_radius=33 / 1000,
+    grain_number=5,
+    grain_density=1815,
+    grain_outer_radius=33 / 1000,
+    grain_initial_inner_radius=15 / 1000,
+    grain_initial_height=120 / 1000,
+    grain_separation=5 / 1000,
+    grains_center_of_mass_position=0.397,
+    center_of_dry_mass_position=0.317,
+    nozzle_position=0,
+    burn_time=3.9,
+    throat_radius=11 / 1000,
+    coordinate_system_orientation="nozzle_to_combustion_chamber",
+)
+'''
+AeroTechK550W = GenericMotor(
+   thrust_source="AeroTech_K550W.eng",
+   chamber_radius=54/(2*1000),          # from thrustcurve.org
+   chamber_height=41/1000,              # from thrustcurve.org
+   chamber_position= (1.33 - 0.815 - 41/(2*1000)), # Total length - CG pos - midpoint of chamber
+   dry_mass=1.487,                      # from thrustcurve.org
+   propellant_initial_mass=0.889,       # from thrustcurve.org
+   dry_inertia=(0.125, 0.125, 0.002), #copied from pro75M example need to find
+   nozzle_radius= 54/(2*1000),          # dia = 54 mm
+   burn_time=3.9,
+   #nozzle_position=0,
+) 
+
+x4 = Rocket(
+    radius=9.8 / (2* 100),                      # dia = 9.8cm
+    mass=5.083,                                 # OpenRocket estimate
+    inertia=(6.321, 6.321, 0.034),              # copied from Rocketpy example
+    power_off_drag="powerOffDragCurve.csv",     # drag needs change
+    power_on_drag="powerOnDragCurve.csv",
+    center_of_mass_without_motor=0,
+    coordinate_system_orientation="tail_to_nose",
 )
 
-Calisto = Rocket(
-    motor=J460,
-    radius=0.05,
-    mass=4.25 - 0.415,
-    inertiaI= 4.6,
-    inertiaZ=0.035,
-    distanceRocketNozzle=-0.7,
-    distanceRocketPropellant=-0.5,
-    powerOffDrag=DragWithAirBrakes(),
-    powerOnDrag="RocketPy_tutorial/powerOnDragCurve.csv",
+x4.add_motor(AeroTechK550W, position=-(1.33 - 0.815)) # position needs to be checked again [Total length - CG pos]
+
+rail_buttons = x4.set_rail_buttons(
+    upper_button_position=0.0818,
+    lower_button_position=-0.6182,
+    angular_position=45,
 )
 
-Calisto.setRailButtons([0.2, -0.5])
+NoseCone = x4.add_nose(length=0.30, kind="ogive", position=0.815)
 
-NoseCone = Calisto.addNose(length=0.55829, kind="vonKarman", distanceToCM=0.71971)
-
-FinSet = Calisto.addTrapezoidalFins(
+fin_set = x4.add_trapezoidal_fins(
     n=4,
-    rootChord=0.120,
-    tipChord=0.040,
-    span=0.100,
-    distanceToCM=-0.54956,
-    cantAngle=0,
-    radius=None,
+    root_chord= 15/100,         # from OR 15 cm
+    tip_chord= (15 -6) / 100,
+    span=15/100,
+    position=-(1.33-0.815 - 15/(2*100)), # Total length - CG pos - midpoint of fin
+    cant_angle=0,
+    sweep_angle=21.8,           # OR fins only have forward sweep edit this
     airfoil=None,
 )
 
-"""
-
-def drogueTrigger(p, y):
-    # p = pressure
-    # y = [x, y, z, vx, vy, vz, e0, e1, e2, e3, w1, w2, w3]
-    # activate drogue when vz < 0 m/s.
-    return True if y[5] < 0 else False
+""" tail = calisto.add_tail(
+    top_radius=0.0635, bottom_radius=0.0435, length=0.060, position=-1.194656
+) """
 
 
-def mainTrigger(p, y):
-    # p = pressure
-    # y = [x, y, z, vx, vy, vz, e0, e1, e2, e3, w1, w2, w3]
-    # activate main when vz < 0 m/s and z < 800 + 1400 m (+1400 due to surface elevation).
-    return True if y[5] < 0 and y[2] < 800 + 1400 else False
-
-
-Main = Calisto.addParachute(
-    "Main",
-    CdS=10.0,
-    trigger=mainTrigger,
-    samplingRate=105,
+main = x4.add_parachute(
+    name="main",
+    cd_s=10.0,
+    trigger=800,      # ejection altitude in meters
+    sampling_rate=105,
     lag=1.5,
     noise=(0, 8.3, 0.5),
 )
 
-Drogue = Calisto.addParachute(
-    "Drogue",
-    CdS=1.0,
-    trigger=drogueTrigger,
-    samplingRate=105,
+drogue = x4.add_parachute(
+    name="drogue",
+    cd_s=1.0,
+    trigger="apogee",  # ejection at apogee
+    sampling_rate=105,
     lag=1.5,
     noise=(0, 8.3, 0.5),
 )
 
-
-"""
-TestFlight = Flight(rocket=Calisto, environment=env, inclination=85, heading=0, terminateOnApogee=True)
-TestFlight.allInfo()
+x4.plots.static_margin()
+x4.draw()
